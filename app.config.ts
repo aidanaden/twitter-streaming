@@ -3,6 +3,19 @@ import UnoCSS from "unocss/vite";
 import { nodePolyfills } from "vite-plugin-node-polyfills";
 
 export default defineConfig({
+  server: {
+    preset: "cloudflare-pages",
+    alias: {
+      // For `readable-stream` to properly resolve Cloudflare runtime polyfill
+      "process/": "process",
+    },
+    esbuild: {
+      options: {
+        // We need BigInt support (default: 2019)
+        target: "esnext",
+      },
+    },
+  },
   vite: {
     plugins: [
       UnoCSS(),
