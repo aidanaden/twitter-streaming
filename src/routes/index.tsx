@@ -109,6 +109,7 @@ export default function Home() {
 
   async function parseChunk(chunk: Uint8Array) {
     const raw_tweet = new TextDecoder().decode(chunk);
+    console.log({ raw_tweet });
     const raw = JSON.parse(raw_tweet) as RawTweetData;
     const parsed = parseRawTweet(raw);
     if (!parsed) {
