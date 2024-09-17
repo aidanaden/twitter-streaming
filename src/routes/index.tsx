@@ -136,6 +136,17 @@ export default function Home() {
               interval: 1000,
               min: 1000,
             });
+            const displayedSymbols =
+              _tweet.matchedSymbols.length > 3
+                ? _tweet.matchedSymbols.slice(0, 3)
+                : _tweet.matchedSymbols;
+            const remaining =
+              _tweet.matchedSymbols.length > 3
+                ? _tweet.matchedSymbols.length - 3
+                : 0;
+            if (remaining > 0) {
+              displayedSymbols.push(`+${remaining} more`);
+            }
             return (
               <a
                 class="py-1.5 px-3 text-sm rounded-lg w-full space-y-1.5 bg-gray-900/70 ring-1 ring-gray-800 transition hover:ring-gray-600"
@@ -147,9 +158,13 @@ export default function Home() {
                     <h2 class="font-semibold text-gray-100">
                       @{_tweet.author.username}
                     </h2>
-                    <div class="text-gray-400 text-xs flex gap-x-0.5 font-medium">
-                      <For each={_tweet.matchedSymbols}>
-                        {(symbol) => <span>{symbol}</span>}
+                    <div class="text-gray-400 text-xs flex gap-x-1 text-xs">
+                      <For each={displayedSymbols}>
+                        {(symbol) => (
+                          <span class="py-0.5 px-1 rounded ring-1 ring-gray-800">
+                            {symbol}
+                          </span>
+                        )}
                       </For>
                     </div>
                   </div>
