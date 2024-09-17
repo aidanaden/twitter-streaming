@@ -1,6 +1,6 @@
 export async function GET() {
   const endpoint =
-    "https://api.x.com/2/tweets/search/stream?expansions=author_id&user.fields=username,name,profile_image_url";
+    "https://api.x.com/2/tweets/search/stream?expansions=author_id&user.fields=username,name,profile_image_url&tweet.fields=created_at";
   const BEARER_TOKEN =
     "AAAAAAAAAAAAAAAAAAAAAMlvugEAAAAALpRgTI8PBJiuX0PZgJeLxnxGb2A%3DVodOxADN76K9SgV0V50Q6SvGcVf5YViW81YFWW21Kyv3XjKdYn";
   const stream = await fetch(endpoint, {

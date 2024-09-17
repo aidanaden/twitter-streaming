@@ -1,6 +1,8 @@
 import { For, createEffect, createMemo, onMount } from "solid-js";
-import { ids } from "../ids";
 import { createStore, produce } from "solid-js/store";
+import { createTimeAgo } from "@solid-primitives/date";
+
+import { ids } from "../ids";
 
 type RawTweetData = {
   data: {
@@ -9,6 +11,7 @@ type RawTweetData = {
     author_id: string;
     text: string;
     edit_history_tweet_ids: string[];
+    created_at: string;
   };
   includes: {
     users: TweetUserData[];
@@ -21,6 +24,7 @@ type TweetData = {
   id: string;
   text: string;
   matchedSymbols: string[];
+  createdAt: Date;
 };
 
 type TweetUserData = {
@@ -44,6 +48,7 @@ function parseRawTweet(raw: RawTweetData): TweetData | undefined {
     id: raw.data.id,
     text: raw.data.text,
     matchedSymbols,
+    createdAt: new Date(raw.data.created_at),
   };
 }
 
@@ -123,22 +128,42 @@ export default function Home() {
   });
 
   return (
-    <main class="text-center m-auto text-gray-700 p-4 max-w-lg flex justify-center">
+    <main class="text-center mx-auto text-gray-700 p-4 max-w-lg flex bg-gray-950 h-full">
       <div class="flex flex-col gap-y-3 w-full items-center overflow-y">
-        <For each={tweets.reverse()}>
-          {(_tweet) => (
-            <div class="py-1.5 px-3 text-sm rounded-lg bg-slate-100 text-slate-400 w-full space-y-1.5">
-              <div class="flex items-center gap-x-1.5">
-                <h2 class="font-semibold">@{_tweet.author.username}</h2>
-                <div class="text-slate-500 text-xs flex gap-x-0.5 font-medium">
-                  <For each={_tweet.matchedSymbols}>
-                    {(symbol) => <span>{symbol}</span>}
-                  </For>
+        <For each={tweets}>
+          {(_tweet) => {
+            const [timeago] = createTimeAgo(_tweet.createdAt, {
+              interval: 1000,
+              min: 1000,
+            });
+            return (
+              <a
+                class="py-1.5 px-3 text-sm rounded-lg w-full space-y-1.5 bg-gray-900/70 ring-1 ring-gray-800 transition hover:ring-gray-600"
+                target="_blank"
+                href={`https://twitter.com/${_tweet.author.username}/status/${_tweet.id}`}
+              >
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-x-1.5">
+                    <h2 class="font-semibold text-gray-100">
+                      @{_tweet.author.username}
+                    </h2>
+                    <div class="text-gray-400 text-xs flex gap-x-0.5 font-medium">
+                      <For each={_tweet.matchedSymbols}>
+                        {(symbol) => <span>{symbol}</span>}
+                      </For>
+                    </div>
+                  </div>
+
+                  <span class="text-xs font-medium whitespace-nowrap tabular-nums tracking-tight text-gray-500">
+                    {timeago()}
+                  </span>
                 </div>
-              </div>
-              <p class="text-left line-clamp-3">{_tweet.text}</p>
-            </div>
-          )}
+                <p class="text-left line-clamp-3 text-gray-600">
+                  {_tweet.text}
+                </p>
+              </a>
+            );
+          }}
         </For>
       </div>
     </main>
