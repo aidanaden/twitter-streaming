@@ -13,7 +13,8 @@
     "@unocss/reset": "^0.59.4",
     "solid-js": "^1.8.22",
     "unocss": "^0.59.4",
-    "vinxi": "^0.4.3"
+    "vinxi": "^0.4.3",
+    "vite-plugin-node-polyfills": "^0.22.0"
   },
   "engines": {
     "node": ">=18"
