@@ -35,7 +35,6 @@ type TweetUserData = {
 };
 
 function parseRawTweet(raw: RawTweetData): TweetData | undefined {
-  console.log({ raw });
   const author = raw.includes.users.find((u) => u.id === raw.data.author_id);
   if (!author) {
     return;
@@ -44,7 +43,6 @@ function parseRawTweet(raw: RawTweetData): TweetData | undefined {
   if (matchedSymbols.length === 0) {
     return;
   }
-  console.log({ created_at: raw.data.created_at });
   return {
     author: author,
     id: raw.data.id,
@@ -61,7 +59,6 @@ function findDollarSubstrings(text: string): string[] {
     return [];
   }
   const unique = Array.from(new Set(matched));
-  console.log({ unique });
   const symbols = unique.filter((m) => !isPositiveInteger(m.slice(1)));
 
   console.log({ symbols });
@@ -76,8 +73,48 @@ function isPositiveInteger(str: string): boolean {
   return num > 0 && num.toString() === str;
 }
 
+async function readAllChunks(
+  readableStream: ReadableStream<Uint8Array>,
+  callback: (chunk: Uint8Array) => Promise<void>,
+) {
+  const reader = readableStream.getReader();
+  const chunks = [];
+
+  let done;
+  while (!done) {
+    try {
+      let { value, done } = await reader.read();
+      if (done) {
+        return chunks;
+      }
+      if (value) {
+        try {
+          await callback(value);
+        } catch (e) {
+          console.error("readAllChunks: failed to run callback on a chunk: ", {
+            e,
+          });
+        }
+      }
+      chunks.push(value);
+    } catch (e) {
+      console.error("readAllChunks: failed to read chunk: ", { e });
+    }
+  }
+}
+
 export default function Home() {
   const [tweets, setTweets] = createStore<TweetData[]>([]);
+
+  async function parseChunk(chunk: Uint8Array) {
+    const raw_tweet = new TextDecoder().decode(chunk);
+    const raw = JSON.parse(raw_tweet) as RawTweetData;
+    const parsed = parseRawTweet(raw);
+    if (!parsed) {
+      return;
+    }
+    setTweets(produce((tweets) => tweets.unshift(parsed)));
+  }
 
   async function fetchTweets() {
     const stream = await fetch("/api/tweets", { method: "GET" });
@@ -90,24 +127,25 @@ export default function Home() {
     console.log({ body: stream.body });
 
     try {
-      // read the response chunk-by-chunk!
-      for await (const chunk of stream.body) {
-        // await new Promise((r) => setTimeout(r, 333));
-
-        const raw_tweet = new TextDecoder().decode(chunk);
-        console.log({ raw_tweet });
-        try {
-          const raw = JSON.parse(raw_tweet) as RawTweetData;
-          const parsed = parseRawTweet(raw);
-          if (!parsed) {
-            continue;
-          }
-          setTweets(produce((tweets) => tweets.unshift(parsed)));
-        } catch (e) {
-          console.log("failed to parse: ", { raw_tweet, e });
-          continue;
-        }
-      }
+      await readAllChunks(stream.body, parseChunk);
+      // // read the response chunk-by-chunk!
+      // for await (const chunk of stream.body) {
+      //   // await new Promise((r) => setTimeout(r, 333));
+      //
+      //   const raw_tweet = new TextDecoder().decode(chunk);
+      //   console.log({ raw_tweet });
+      //   try {
+      //     const raw = JSON.parse(raw_tweet) as RawTweetData;
+      //     const parsed = parseRawTweet(raw);
+      //     if (!parsed) {
+      //       continue;
+      //     }
+      //     setTweets(produce((tweets) => tweets.unshift(parsed)));
+      //   } catch (e) {
+      //     console.log("failed to parse: ", { raw_tweet, e });
+      //     continue;
+      //   }
+      // }
     } catch (e) {
       console.log("error reading from stream: ", { e });
     }
