@@ -11,6 +11,23 @@ import { createTimeAgo } from "@solid-primitives/date";
 
 // import { ids } from "../ids";
 
+const SYMBOLS = [
+  "SOL",
+  "WIF",
+  "JUP",
+  "PYTH",
+  "JTO",
+  "ORCA",
+  "DRIFT",
+  "ZEX",
+  "CLOUD",
+  "PYUSD",
+  "POPCAT",
+  "MOTHER",
+  "BILLY",
+  "NEIRO",
+];
+
 type RawTweetData = {
   data: {
     article: object;
@@ -46,7 +63,10 @@ function parseRawTweet(raw: RawTweetData): TweetData | undefined {
   if (!author) {
     return;
   }
-  const matchedSymbols = findDollarSubstrings(raw.data.text);
+  // const matchedSymbols = findDollarSubstrings(raw.data.text);
+  const matchedSymbols = SYMBOLS.filter((symbol) =>
+    raw.data.text.includes(symbol),
+  );
   if (matchedSymbols.length === 0) {
     return;
   }
@@ -59,26 +79,24 @@ function parseRawTweet(raw: RawTweetData): TweetData | undefined {
   };
 }
 
-function findDollarSubstrings(text: string): string[] {
-  const regex = /\$\w+/g;
-  const matched = text.match(regex);
-  if (!matched) {
-    return [];
-  }
-  const unique = Array.from(new Set(matched));
-  const symbols = unique.filter((m) => !isPositiveInteger(m.slice(1)));
-
-  console.log({ symbols });
-  return symbols;
-}
-
-function isPositiveInteger(str: string): boolean {
-  if (!/^\d+$/.test(str)) {
-    return false;
-  }
-  const num = parseFloat(str);
-  return num > 0 && num.toString() === str;
-}
+// function findDollarSubstrings(text: string): string[] {
+//   const regex = /\$\w+/g;
+//   const matched = text.match(regex);
+//   if (!matched) {
+//     return [];
+//   }
+//   const unique = Array.from(new Set(matched));
+//   const symbols = unique.filter((m) => !isPositiveInteger(m.slice(1)));
+//   return symbols;
+// }
+//
+// function isPositiveInteger(str: string): boolean {
+//   if (!/^\d+$/.test(str)) {
+//     return false;
+//   }
+//   const num = parseFloat(str);
+//   return num > 0 && num.toString() === str;
+// }
 
 async function readAllChunks(
   readableStream: ReadableStream<Uint8Array>,
