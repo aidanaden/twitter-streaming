@@ -183,13 +183,22 @@ export default function Home() {
   });
 
   return (
-    <main class="text-center mx-auto text-gray-700 p-4 md:max-w-lg flex bg-gray-950 h-full w-full">
+    <main class="text-center mx-auto text-gray-700 p-4 md:max-w-lg flex bg-gray-950 h-full w-full justify-center flex-col gap-y-6">
+      <div class="space-y-1.5 flex flex-col items-center justify-center text-xs text-gray-400 w-full">
+        <div class="w-full text-center">Approved symbols:</div>
+        <div class="flex gap-1 justify-center w-full flex-wrap content-center items-center md:w-xs">
+          <For each={SYMBOLS}>
+            {(symbol) => <span class="font-mono">${symbol}</span>}
+          </For>
+        </div>
+      </div>
       <div class="flex flex-col gap-y-3 w-full items-center overflow-y">
         <Show when={done()}>
           <div class="w-full flex items-center justify-center font-mono text-sm text-gray-100">
             Twitter stream has been closed!
           </div>
         </Show>
+        <Show when={tweets.length === 0 && !done()}>Fetching...</Show>
         <For each={tweets}>
           {(_tweet) => {
             const [timeago] = createTimeAgo(_tweet.createdAt, {
@@ -227,7 +236,7 @@ export default function Home() {
                     <For each={displayedSymbols}>
                       {(symbol) => (
                         <span class="py-0.5 px-1 rounded ring-1 ring-gray-800">
-                          {symbol}
+                          ${symbol}
                         </span>
                       )}
                     </For>
