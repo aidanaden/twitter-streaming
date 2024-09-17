@@ -102,7 +102,7 @@ export default function Home() {
     try {
       // read the response chunk-by-chunk!
       for await (const chunk of stream.body) {
-        await new Promise((r) => setTimeout(r, 500));
+        await new Promise((r) => setTimeout(r, 333));
 
         const raw_tweet = new TextDecoder().decode(chunk);
         console.log({ raw_tweet });
