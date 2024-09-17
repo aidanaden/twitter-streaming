@@ -10,6 +10,23 @@ import { createStore, produce } from "solid-js/store";
 import { createTimeAgo } from "@solid-primitives/date";
 
 // import { ids } from "../ids";
+async function fetchStream() {
+  const endpoint =
+    "https://api.x.com/2/tweets/search/stream?expansions=author_id&user.fields=username,name,profile_image_url&tweet.fields=created_at";
+  const BEARER_TOKEN =
+    "AAAAAAAAAAAAAAAAAAAAAMlvugEAAAAALpRgTI8PBJiuX0PZgJeLxnxGb2A%3DVodOxADN76K9SgV0V50Q6SvGcVf5YViW81YFWW21Kyv3XjKdYn";
+  const stream = await fetch(endpoint, {
+    headers: {
+      Authorization: `Bearer ${BEARER_TOKEN}`,
+    },
+  });
+  console.log({
+    limit: JSON.stringify(stream.headers.get("x-rate-limit-limit")),
+    reset: JSON.stringify(stream.headers.get("x-rate-limit-reset")),
+    remaining: JSON.stringify(stream.headers.get("x-rate-limit-remaining")),
+  });
+  return stream;
+}
 
 const SYMBOLS = [
   "SOL",
@@ -143,15 +160,12 @@ export default function Home() {
   }
 
   async function fetchTweets() {
-    const stream = await fetch("/api/tweets", { method: "GET" });
-    console.log({ stream });
+    const stream = await fetchStream();
     if (!stream.body) {
-      console.error("stream failed to return data!");
+      console.error("fetchStream: error fetching stream body");
       return;
     }
-
     console.log({ body: stream.body });
-
     try {
       await readAllChunks(stream.body, parseChunk);
       // // read the response chunk-by-chunk!
