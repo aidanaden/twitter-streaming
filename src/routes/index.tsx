@@ -70,7 +70,7 @@ function isPositiveInteger(str: string): boolean {
   if (!/^\d+$/.test(str)) {
     return false;
   }
-  const num = parseInt(str, 10);
+  const num = parseFloat(str);
   return num > 0 && num.toString() === str;
 }
 
