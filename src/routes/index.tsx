@@ -169,7 +169,7 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <span class="text-xs font-medium whitespace-nowrap tabular-nums tracking-tight text-gray-500">
+                  <span class="text-xs whitespace-nowrap tabular-nums tracking-tight text-gray-500">
                     {timeago()}
                   </span>
                 </div>
