@@ -1,4 +1,11 @@
-import { For, createEffect, createMemo, onMount } from "solid-js";
+import {
+  For,
+  Show,
+  createEffect,
+  createMemo,
+  createSignal,
+  onMount,
+} from "solid-js";
 import { createStore, produce } from "solid-js/store";
 import { createTimeAgo } from "@solid-primitives/date";
 
@@ -78,7 +85,6 @@ async function readAllChunks(
   callback: (chunk: Uint8Array) => Promise<void>,
 ) {
   const reader = readableStream.getReader();
-  const chunks = [];
 
   let done;
   while (!done) {
@@ -86,7 +92,7 @@ async function readAllChunks(
       let { value, done } = await reader.read();
       console.log({ value, done });
       if (done) {
-        return chunks;
+        return;
       }
       if (value) {
         try {
@@ -97,7 +103,6 @@ async function readAllChunks(
           });
         }
       }
-      chunks.push(value);
     } catch (e) {
       console.error("readAllChunks: failed to read chunk: ", { e });
     }
@@ -106,6 +111,7 @@ async function readAllChunks(
 
 export default function Home() {
   const [tweets, setTweets] = createStore<TweetData[]>([]);
+  const [done, setDone] = createSignal(false);
 
   async function parseChunk(chunk: Uint8Array) {
     const raw_tweet = new TextDecoder().decode(chunk);
@@ -151,6 +157,7 @@ export default function Home() {
     } catch (e) {
       console.log("error reading from stream: ", { e });
     }
+    setDone(true);
   }
 
   onMount(async () => {
@@ -160,6 +167,11 @@ export default function Home() {
   return (
     <main class="text-center mx-auto text-gray-700 p-4 md:max-w-lg flex bg-gray-950 h-full w-full">
       <div class="flex flex-col gap-y-3 w-full items-center overflow-y">
+        <Show when={done()}>
+          <div class="w-full flex items-center justify-center font-mono text-sm text-gray-100">
+            Twitter stream has been closed!
+          </div>
+        </Show>
         <For each={tweets}>
           {(_tweet) => {
             const [timeago] = createTimeAgo(_tweet.createdAt, {
