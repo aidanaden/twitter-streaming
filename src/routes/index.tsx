@@ -2,7 +2,7 @@ import { For, createEffect, createMemo, onMount } from "solid-js";
 import { createStore, produce } from "solid-js/store";
 import { createTimeAgo } from "@solid-primitives/date";
 
-import { ids } from "../ids";
+// import { ids } from "../ids";
 
 type RawTweetData = {
   data: {
@@ -35,6 +35,7 @@ type TweetUserData = {
 };
 
 function parseRawTweet(raw: RawTweetData): TweetData | undefined {
+  console.log({ raw });
   const author = raw.includes.users.find((u) => u.id === raw.data.author_id);
   if (!author) {
     return;
@@ -43,6 +44,7 @@ function parseRawTweet(raw: RawTweetData): TweetData | undefined {
   if (matchedSymbols.length === 0) {
     return;
   }
+  console.log({ created_at: raw.data.created_at });
   return {
     author: author,
     id: raw.data.id,
@@ -76,18 +78,8 @@ function isPositiveInteger(str: string): boolean {
 
 export default function Home() {
   const [tweets, setTweets] = createStore<TweetData[]>([]);
-  const start = performance.now();
-  const tweetsPerSecond = createMemo(() => {
-    const now = performance.now();
-    const elapsed = (now - start) / 1000;
-    return tweets.length / elapsed;
-  });
-  createEffect(() => {
-    console.log("tweets per second: ", { tweetsPerSecond: tweetsPerSecond() });
-  });
 
   async function fetchTweets() {
-    console.log({ ids: ids.length });
     const stream = await fetch("/api/tweets", { method: "GET" });
     console.log({ stream });
     if (!stream.body) {
@@ -96,8 +88,6 @@ export default function Home() {
     }
 
     console.log({ body: stream.body });
-
-    // let max = 0;
 
     try {
       // read the response chunk-by-chunk!
@@ -128,7 +118,7 @@ export default function Home() {
   });
 
   return (
-    <main class="text-center mx-auto text-gray-700 p-4 max-w-lg flex bg-gray-950 h-full">
+    <main class="text-center mx-auto text-gray-700 p-4 md:max-w-lg flex bg-gray-950 h-full w-full">
       <div class="flex flex-col gap-y-3 w-full items-center overflow-y">
         <For each={tweets}>
           {(_tweet) => {
@@ -153,26 +143,27 @@ export default function Home() {
                 target="_blank"
                 href={`https://twitter.com/${_tweet.author.username}/status/${_tweet.id}`}
               >
-                <div class="flex items-center justify-between">
-                  <div class="flex items-center gap-x-1.5">
+                <div class="space-y-1.5">
+                  <div class="flex items-center justify-between w-full text-left">
                     <h2 class="font-semibold text-gray-100">
                       @{_tweet.author.username}
                     </h2>
-                    <div class="text-gray-400 text-xs flex gap-x-1 text-xs">
-                      <For each={displayedSymbols}>
-                        {(symbol) => (
-                          <span class="py-0.5 px-1 rounded ring-1 ring-gray-800">
-                            {symbol}
-                          </span>
-                        )}
-                      </For>
-                    </div>
-                  </div>
 
-                  <span class="text-xs whitespace-nowrap tabular-nums tracking-tight text-gray-500">
-                    {timeago()}
-                  </span>
+                    <span class="text-xs whitespace-nowrap tabular-nums tracking-tight text-gray-500">
+                      {timeago()}
+                    </span>
+                  </div>
+                  <div class="text-gray-400 text-xs flex flex-wrap gap-x-1 text-xs">
+                    <For each={displayedSymbols}>
+                      {(symbol) => (
+                        <span class="py-0.5 px-1 rounded ring-1 ring-gray-800">
+                          {symbol}
+                        </span>
+                      )}
+                    </For>
+                  </div>
                 </div>
+
                 <p class="text-left line-clamp-3 text-gray-600">
                   {_tweet.text}
                 </p>
