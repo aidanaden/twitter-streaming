@@ -84,6 +84,7 @@ async function readAllChunks(
   while (!done) {
     try {
       let { value, done } = await reader.read();
+      console.log({ value, done });
       if (done) {
         return chunks;
       }
