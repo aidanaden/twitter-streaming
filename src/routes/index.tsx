@@ -56,6 +56,8 @@ export default function Home() {
       console.log("message received by server: ", { message });
       setTweets(produce((tweets) => tweets.unshift(tweet)));
     });
+
+    ws.send("open");
   }
 
   onMount(async () => {
