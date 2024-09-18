@@ -8,26 +8,9 @@ import {
 } from "solid-js";
 import { createStore, produce } from "solid-js/store";
 import { createTimeAgo } from "@solid-primitives/date";
+import { hc } from "hono/client";
 
 // import { ids } from "../ids";
-async function fetchStream() {
-  const endpoint =
-    "https://api.x.com/2/tweets/search/stream?expansions=author_id&user.fields=username,name,profile_image_url&tweet.fields=created_at";
-  const BEARER_TOKEN =
-    "AAAAAAAAAAAAAAAAAAAAAMlvugEAAAAALpRgTI8PBJiuX0PZgJeLxnxGb2A%3DVodOxADN76K9SgV0V50Q6SvGcVf5YViW81YFWW21Kyv3XjKdYn";
-  const stream = await fetch(endpoint, {
-    headers: {
-      Authorization: `Bearer ${BEARER_TOKEN}`,
-    },
-  });
-  console.log({
-    limit: JSON.stringify(stream.headers.get("x-rate-limit-limit")),
-    reset: JSON.stringify(stream.headers.get("x-rate-limit-reset")),
-    remaining: JSON.stringify(stream.headers.get("x-rate-limit-remaining")),
-  });
-  return stream;
-}
-
 const SYMBOLS = [
   "SOL",
   "WIF",
@@ -45,21 +28,6 @@ const SYMBOLS = [
   "NEIRO",
 ];
 
-type RawTweetData = {
-  data: {
-    article: object;
-    id: string;
-    author_id: string;
-    text: string;
-    edit_history_tweet_ids: string[];
-    created_at: string;
-  };
-  includes: {
-    users: TweetUserData[];
-  };
-  matching_rules: { id: string; tag: string }[];
-};
-
 type TweetData = {
   author: TweetUserData;
   id: string;
@@ -75,121 +43,24 @@ type TweetUserData = {
   profile_image_url: string;
 };
 
-function parseRawTweet(raw: RawTweetData): TweetData | undefined {
-  const author = raw.includes.users.find((u) => u.id === raw.data.author_id);
-  if (!author) {
-    return;
-  }
-  // const matchedSymbols = findDollarSubstrings(raw.data.text);
-  const matchedSymbols = SYMBOLS.filter((symbol) =>
-    raw.data.text.includes(symbol),
-  );
-  if (matchedSymbols.length === 0) {
-    return;
-  }
-  return {
-    author: author,
-    id: raw.data.id,
-    text: raw.data.text,
-    matchedSymbols,
-    createdAt: new Date(raw.data.created_at),
-  };
-}
-
-// function findDollarSubstrings(text: string): string[] {
-//   const regex = /\$\w+/g;
-//   const matched = text.match(regex);
-//   if (!matched) {
-//     return [];
-//   }
-//   const unique = Array.from(new Set(matched));
-//   const symbols = unique.filter((m) => !isPositiveInteger(m.slice(1)));
-//   return symbols;
-// }
-//
-// function isPositiveInteger(str: string): boolean {
-//   if (!/^\d+$/.test(str)) {
-//     return false;
-//   }
-//   const num = parseFloat(str);
-//   return num > 0 && num.toString() === str;
-// }
-
-async function readAllChunks(
-  readableStream: ReadableStream<Uint8Array>,
-  callback: (chunk: Uint8Array) => Promise<void>,
-) {
-  const reader = readableStream.getReader();
-
-  let done;
-  while (!done) {
-    try {
-      let { value, done } = await reader.read();
-      console.log({ value, done });
-      if (done) {
-        return;
-      }
-      if (value) {
-        try {
-          await callback(value);
-        } catch (e) {
-          console.error("readAllChunks: failed to run callback on a chunk: ", {
-            e,
-          });
-        }
-      }
-    } catch (e) {
-      console.error("readAllChunks: failed to read chunk: ", { e });
-    }
-  }
-}
-
 export default function Home() {
   const [tweets, setTweets] = createStore<TweetData[]>([]);
   const [done, setDone] = createSignal(false);
 
-  async function parseChunk(chunk: Uint8Array) {
-    const raw_tweet = new TextDecoder().decode(chunk);
-    console.log({ raw_tweet });
-    const raw = JSON.parse(raw_tweet) as RawTweetData;
-    const parsed = parseRawTweet(raw);
-    if (!parsed) {
-      return;
-    }
-    setTweets(produce((tweets) => tweets.unshift(parsed)));
-  }
-
   async function fetchTweets() {
-    const stream = await fetchStream();
-    if (!stream.body) {
-      console.error("fetchStream: error fetching stream body");
-      return;
-    }
-    console.log({ body: stream.body });
-    try {
-      await readAllChunks(stream.body, parseChunk);
-      // // read the response chunk-by-chunk!
-      // for await (const chunk of stream.body) {
-      //   // await new Promise((r) => setTimeout(r, 333));
-      //
-      //   const raw_tweet = new TextDecoder().decode(chunk);
-      //   console.log({ raw_tweet });
-      //   try {
-      //     const raw = JSON.parse(raw_tweet) as RawTweetData;
-      //     const parsed = parseRawTweet(raw);
-      //     if (!parsed) {
-      //       continue;
-      //     }
-      //     setTweets(produce((tweets) => tweets.unshift(parsed)));
-      //   } catch (e) {
-      //     console.log("failed to parse: ", { raw_tweet, e });
-      //     continue;
-      //   }
-      // }
-    } catch (e) {
-      console.log("error reading from stream: ", { e });
-    }
-    setDone(true);
+    const client = hc("https://tweetstream-ws.adenxtreme.workers.dev");
+    const ws = client.ws.$ws(0);
+
+    ws.addEventListener("open", () => {
+      ws.send("opening ws connection from client!");
+    });
+    ws.addEventListener("message", (message) => {
+      const tweet = JSON.parse(message.data) as TweetData;
+      console.log("message received by server: ", { message });
+      setTweets(produce((tweets) => tweets.unshift(tweet)));
+    });
+
+    ws.addEventListener("close", () => setDone(true));
   }
 
   onMount(async () => {
