@@ -51,16 +51,11 @@ export default function Home() {
     const client = hc("https://tweetstream-ws.adenxtreme.workers.dev");
     const ws = client.ws.$ws(0);
 
-    ws.addEventListener("open", () => {
-      ws.send("opening ws connection from client!");
-    });
     ws.addEventListener("message", (message) => {
       const tweet = JSON.parse(message.data) as TweetData;
       console.log("message received by server: ", { message });
       setTweets(produce((tweets) => tweets.unshift(tweet)));
     });
-
-    ws.addEventListener("close", () => setDone(true));
   }
 
   onMount(async () => {
